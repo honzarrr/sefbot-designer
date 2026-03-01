@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useDesignerStore } from '@/stores/designerStore';
 import { ElementPalette } from '@/components/sidebar/ElementPalette';
 import DesignerCanvas from '@/components/canvas/DesignerCanvas';
-import { StepEditor } from '@/components/panels/StepEditor';
 import { ConnectionEditor } from '@/components/panels/ConnectionEditor';
 import { VersionPanel } from '@/components/panels/VersionPanel';
 import { Button } from '@/components/ui/button';
@@ -27,7 +26,7 @@ import {
 } from 'lucide-react';
 import { BuildInfo } from '@/components/shared/BuildInfo';
 
-type RightPanel = 'step' | 'connection' | 'versions' | null;
+type RightPanel = 'connection' | 'versions' | null;
 
 export default function ProjectPage() {
   return (
@@ -55,22 +54,18 @@ function ProjectPageInner() {
 
   useEffect(() => {
     if (!project || selectedIds.length === 0) {
-      if (rightPanel === 'step' || rightPanel === 'connection') {
+      if (rightPanel === 'connection') {
         setRightPanel(null);
       }
       return;
     }
 
     const selectedId = selectedIds[0];
-    const step = project.steps.find((s) => s.id === selectedId);
-    if (step) {
-      setRightPanel('step');
-      return;
-    }
     const conn = project.connections.find((c) => c.id === selectedId);
     if (conn) {
       setRightPanel('connection');
-      return;
+    } else if (rightPanel === 'connection') {
+      setRightPanel(null);
     }
   }, [selectedIds, project, rightPanel]);
 
@@ -108,9 +103,6 @@ function ProjectPageInner() {
     );
   }
 
-  const selectedStep = selectedIds.length === 1
-    ? project.steps.find((s) => s.id === selectedIds[0])
-    : undefined;
   const selectedConnection = selectedIds.length === 1
     ? project.connections.find((c) => c.id === selectedIds[0])
     : undefined;
@@ -165,7 +157,6 @@ function ProjectPageInner() {
           <aside className="w-72 border-l bg-card shrink-0 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {rightPanel === 'step' && 'Step Editor'}
                 {rightPanel === 'connection' && 'Connection'}
                 {rightPanel === 'versions' && 'Versions'}
               </h2>
@@ -175,10 +166,8 @@ function ProjectPageInner() {
             </div>
             <Separator />
             <div className="flex-1 overflow-y-auto">
-              {rightPanel === 'step' && selectedStep && <StepEditor key={selectedStep.id} step={selectedStep} />}
               {rightPanel === 'connection' && selectedConnection && <ConnectionEditor key={selectedConnection.id} connection={selectedConnection} />}
               {rightPanel === 'versions' && <VersionPanel />}
-              {rightPanel === 'step' && !selectedStep && <div className="p-4 text-sm text-muted-foreground">Select a step to edit</div>}
               {rightPanel === 'connection' && !selectedConnection && <div className="p-4 text-sm text-muted-foreground">Select a connection to edit</div>}
             </div>
           </aside>
