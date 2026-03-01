@@ -30,6 +30,7 @@ import {
   Pencil,
   FolderOpen,
 } from 'lucide-react';
+import { BuildInfo } from '@/components/shared/BuildInfo';
 
 const COLUMNS: { key: ProjectListItem['status']; label: string; color: string }[] = [
   { key: 'progress', label: 'In Progress', color: 'bg-blue-500' },
@@ -280,6 +281,8 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BuildInfo />
     </div>
   );
 }

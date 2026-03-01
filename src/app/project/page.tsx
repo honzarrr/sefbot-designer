@@ -25,6 +25,7 @@ import {
   History,
   X,
 } from 'lucide-react';
+import { BuildInfo } from '@/components/shared/BuildInfo';
 
 type RightPanel = 'step' | 'connection' | 'versions' | null;
 
@@ -121,6 +122,7 @@ function ProjectPageInner() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-sm font-semibold truncate">{project.name}</h1>
+        <BuildInfo />
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant="ghost"
