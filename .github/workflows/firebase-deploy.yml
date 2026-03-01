@@ -28,10 +28,7 @@ jobs:
         with:
           workload_identity_provider: projects/436171679854/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: github-actions-deploy@sefbot-designer.iam.gserviceaccount.com
+          create_credentials_file: true
+          export_environment_variables: true
 
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ steps.auth.outputs.credentials_file_path }}
-          channelId: live
-          projectId: sefbot-designer
+      - run: npx firebase-tools deploy --only hosting --project sefbot-designer
