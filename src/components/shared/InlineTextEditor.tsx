@@ -46,10 +46,15 @@ export function InlineTextEditor({
       ref={ref}
       contentEditable
       suppressContentEditableWarning
-      className={`outline-none min-h-[1.25em] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none ${className}`}
+      className={`outline-none min-h-[1.25em] empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none nopan nodrag nowheel ${className}`}
       data-placeholder={placeholder}
       onInput={handleInput}
-      onKeyDown={handleKeyDown}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        handleKeyDown(e);
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       onCompositionStart={() => { isComposing.current = true; }}
       onCompositionEnd={() => {
         isComposing.current = false;

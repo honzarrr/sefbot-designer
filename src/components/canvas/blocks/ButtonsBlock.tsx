@@ -55,7 +55,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
 
   return (
     <div
-      className="relative space-y-1 pt-1 border-t border-gray-100"
+      className="relative space-y-1 pt-1 border-t border-gray-100 nopan nodrag"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -75,7 +75,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
 
           {editingId === btn.id ? (
             <input
-              className="flex-1 bg-transparent outline-none text-xs border-b border-gray-300"
+              className="flex-1 bg-transparent outline-none text-xs border-b border-gray-300 nopan nodrag"
               value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
               onBlur={commitEdit}
@@ -85,6 +85,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
                 if (e.key === 'Escape') setEditingId(null);
               }}
               onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               autoFocus
             />
           ) : (
@@ -94,6 +95,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
                 e.stopPropagation();
                 startEdit(btn.id, btn.label);
               }}
+              onMouseDown={(e) => e.stopPropagation()}
             >
               {btn.label}
             </span>
@@ -108,6 +110,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
               e.stopPropagation();
               deleteButton(stepId, block.id, btn.id);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
             className="w-4 h-4 rounded text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
             title="Delete button"
           >
@@ -122,6 +125,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
             e.stopPropagation();
             addButton(stepId, block.id);
           }}
+          onMouseDown={(e) => e.stopPropagation()}
           className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors px-1 py-0.5"
         >
           <Plus className="w-3 h-3" />
@@ -136,6 +140,7 @@ function ButtonsBlockComponent({ stepId, block }: ButtonsBlockProps) {
             e.stopPropagation();
             deleteBlock(stepId, block.id);
           }}
+          onMouseDown={(e) => e.stopPropagation()}
           className="absolute -right-1 -top-1 w-5 h-5 rounded bg-white shadow border border-gray-200 text-red-500 flex items-center justify-center hover:bg-red-50"
           title="Delete buttons block"
         >

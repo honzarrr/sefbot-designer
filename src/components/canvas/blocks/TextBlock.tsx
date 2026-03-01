@@ -27,7 +27,7 @@ function TextBlockComponent({ stepId, block }: TextBlockProps) {
 
   return (
     <div
-      className="relative group py-1"
+      className="relative group py-1 nopan nodrag"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -44,6 +44,7 @@ function TextBlockComponent({ stepId, block }: TextBlockProps) {
               e.stopPropagation();
               setIsEditing(false);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
             className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-gray-500 text-white flex items-center justify-center text-[8px] hover:bg-gray-700 z-10"
             title="Done editing"
           >
@@ -57,6 +58,7 @@ function TextBlockComponent({ stepId, block }: TextBlockProps) {
             e.stopPropagation();
             setIsEditing(true);
           }}
+          onMouseDown={(e) => e.stopPropagation()}
           dangerouslySetInnerHTML={{
             __html: block.content || '<span class="text-gray-400 italic">Click to add text...</span>',
           }}
@@ -71,6 +73,7 @@ function TextBlockComponent({ stepId, block }: TextBlockProps) {
               e.stopPropagation();
               duplicateBlock(stepId, block.id);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
             className="w-5 h-5 rounded bg-white shadow border border-gray-200 text-gray-500 flex items-center justify-center hover:bg-gray-50"
             title="Duplicate"
           >
@@ -81,6 +84,7 @@ function TextBlockComponent({ stepId, block }: TextBlockProps) {
               e.stopPropagation();
               deleteBlock(stepId, block.id);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
             className="w-5 h-5 rounded bg-white shadow border border-gray-200 text-red-500 flex items-center justify-center hover:bg-red-50"
             title="Delete"
           >

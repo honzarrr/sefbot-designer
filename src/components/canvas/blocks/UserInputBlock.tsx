@@ -24,7 +24,7 @@ function UserInputBlockComponent({ stepId, block }: UserInputBlockProps) {
 
   return (
     <div
-      className="relative pt-1 border-t border-gray-100"
+      className="relative pt-1 border-t border-gray-100 nopan nodrag"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -35,11 +35,12 @@ function UserInputBlockComponent({ stepId, block }: UserInputBlockProps) {
           setEditPlaceholder(block.placeholder || '');
           setIsEditing(true);
         }}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <MessageSquare className="w-3 h-3 shrink-0" />
         {isEditing ? (
           <input
-            className="flex-1 bg-transparent outline-none text-xs not-italic text-gray-600 border-b border-gray-300"
+            className="flex-1 bg-transparent outline-none text-xs not-italic text-gray-600 border-b border-gray-300 nopan nodrag"
             value={editPlaceholder}
             onChange={(e) => setEditPlaceholder(e.target.value)}
             onBlur={commitEdit}
@@ -48,6 +49,8 @@ function UserInputBlockComponent({ stepId, block }: UserInputBlockProps) {
               if (e.key === 'Enter') commitEdit();
               if (e.key === 'Escape') setIsEditing(false);
             }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             placeholder="Placeholder text..."
             autoFocus
           />
@@ -63,6 +66,7 @@ function UserInputBlockComponent({ stepId, block }: UserInputBlockProps) {
             e.stopPropagation();
             deleteBlock(stepId, block.id);
           }}
+          onMouseDown={(e) => e.stopPropagation()}
           className="absolute -right-1 top-1 w-5 h-5 rounded bg-white shadow border border-gray-200 text-red-500 flex items-center justify-center hover:bg-red-50"
           title="Delete"
         >
