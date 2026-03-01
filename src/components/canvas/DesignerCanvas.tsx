@@ -196,12 +196,14 @@ function DesignerCanvasInner() {
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
   }, []);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
+      event.stopPropagation();
 
       const type = event.dataTransfer.getData('application/sefbot-type') as DragElementType;
       if (!type) return;

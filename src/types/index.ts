@@ -96,6 +96,7 @@ export interface Project {
   connections: Connection[];
   anchors: Anchor[];
   versions: ProjectVersion[];
+  nodePositions: Record<string, { x: number; y: number }>;
   createdAt: string;
   updatedAt: string;
 }

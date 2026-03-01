@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDesignerStore } from '@/stores/designerStore';
 import { ElementPalette } from '@/components/sidebar/ElementPalette';
 import DesignerCanvas from '@/components/canvas/DesignerCanvas';
@@ -28,17 +28,30 @@ import {
 
 type RightPanel = 'step' | 'connection' | 'versions' | null;
 
-export default function ProjectPageClient({ id }: { id: string }) {
+export default function ProjectPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen text-muted-foreground">Loading...</div>}>
+      <ProjectPageInner />
+    </Suspense>
+  );
+}
+
+function ProjectPageInner() {
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const id = searchParams.get('id') || '';
   const { project, loadProject, saveProject, selectedIds } = useDesignerStore();
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
+    if (!id) {
+      router.replace('/');
+      return;
+    }
     loadProject(id);
-  }, [id, loadProject]);
+  }, [id, loadProject, router]);
 
-  // Auto-open right panel based on selection
   useEffect(() => {
     if (!project || selectedIds.length === 0) {
       if (rightPanel === 'step' || rightPanel === 'connection') {
@@ -48,13 +61,11 @@ export default function ProjectPageClient({ id }: { id: string }) {
     }
 
     const selectedId = selectedIds[0];
-
     const step = project.steps.find((s) => s.id === selectedId);
     if (step) {
       setRightPanel('step');
       return;
     }
-
     const conn = project.connections.find((c) => c.id === selectedId);
     if (conn) {
       setRightPanel('connection');
@@ -105,13 +116,11 @@ export default function ProjectPageClient({ id }: { id: string }) {
 
   return (
     <div className="h-screen flex flex-col">
-      {/* Toolbar */}
       <header className="border-b px-4 py-2 flex items-center gap-3 shrink-0">
         <Button variant="ghost" size="icon" onClick={() => router.push('/')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-sm font-semibold truncate">{project.name}</h1>
-
         <div className="ml-auto flex items-center gap-2">
           <Button
             variant="ghost"
@@ -121,7 +130,6 @@ export default function ProjectPageClient({ id }: { id: string }) {
             <History className="h-4 w-4 mr-2" />
             Versions
           </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" disabled={exporting}>
@@ -140,21 +148,17 @@ export default function ProjectPageClient({ id }: { id: string }) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
           <Button variant="outline" size="sm" onClick={saveProject}>
             <Save className="h-4 w-4 mr-2" />
             Save
           </Button>
         </div>
       </header>
-
-      {/* Main Area */}
       <div className="flex flex-1 overflow-hidden">
         <ElementPalette />
         <div className="flex-1 relative">
           <DesignerCanvas />
         </div>
-
         {rightPanel && (
           <aside className="w-72 border-l bg-card shrink-0 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3">
@@ -163,30 +167,17 @@ export default function ProjectPageClient({ id }: { id: string }) {
                 {rightPanel === 'connection' && 'Connection'}
                 {rightPanel === 'versions' && 'Versions'}
               </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setRightPanel(null)}
-              >
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setRightPanel(null)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             <Separator />
             <div className="flex-1 overflow-y-auto">
-              {rightPanel === 'step' && selectedStep && (
-                <StepEditor key={selectedStep.id} step={selectedStep} />
-              )}
-              {rightPanel === 'connection' && selectedConnection && (
-                <ConnectionEditor key={selectedConnection.id} connection={selectedConnection} />
-              )}
+              {rightPanel === 'step' && selectedStep && <StepEditor key={selectedStep.id} step={selectedStep} />}
+              {rightPanel === 'connection' && selectedConnection && <ConnectionEditor key={selectedConnection.id} connection={selectedConnection} />}
               {rightPanel === 'versions' && <VersionPanel />}
-              {rightPanel === 'step' && !selectedStep && (
-                <div className="p-4 text-sm text-muted-foreground">Select a step to edit</div>
-              )}
-              {rightPanel === 'connection' && !selectedConnection && (
-                <div className="p-4 text-sm text-muted-foreground">Select a connection to edit</div>
-              )}
+              {rightPanel === 'step' && !selectedStep && <div className="p-4 text-sm text-muted-foreground">Select a step to edit</div>}
+              {rightPanel === 'connection' && !selectedConnection && <div className="p-4 text-sm text-muted-foreground">Select a connection to edit</div>}
             </div>
           </aside>
         )}

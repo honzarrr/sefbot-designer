@@ -109,20 +109,25 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
   loadProject: (id: string) => {
     const project = loadProjectFromStorage(id);
     if (project) {
-      // Rebuild node positions from project data
-      const nodePositions: Record<string, { x: number; y: number }> = {};
+      // Restore all node positions from project data
+      const nodePositions: Record<string, { x: number; y: number }> = {
+        ...(project.nodePositions || {}),
+      };
+      // Also include note positions as fallback for older projects
       project.notes.forEach((note) => {
-        nodePositions[note.id] = note.position;
+        if (!nodePositions[note.id]) {
+          nodePositions[note.id] = note.position;
+        }
       });
       set({ project, nodePositions });
     }
   },
 
   saveProject: () => {
-    const { project, projects } = get();
+    const { project, projects, nodePositions } = get();
     if (!project) return;
     const now = new Date().toISOString();
-    const updated = { ...project, updatedAt: now };
+    const updated = { ...project, nodePositions, updatedAt: now };
     saveProjectToStorage(updated);
     const updatedList = projects.map((p) =>
       p.id === project.id ? { ...p, updatedAt: now, name: project.name, status: project.status } : p
@@ -145,6 +150,7 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
       connections: [],
       anchors: [],
       versions: [],
+      nodePositions: {},
       createdAt: now,
       updatedAt: now,
     };
@@ -235,9 +241,10 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
       color: STEP_COLORS[0],
       blocks: [{ id: uuidv4(), type: 'text', content: 'Enter text...' }],
     };
+    const updatedPositions = { ...nodePositions, [id]: position };
     set({
-      project: { ...project, steps: [...project.steps, step] },
-      nodePositions: { ...nodePositions, [id]: position },
+      project: { ...project, steps: [...project.steps, step], nodePositions: updatedPositions },
+      nodePositions: updatedPositions,
     });
     return id;
   },
@@ -509,9 +516,10 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
         { id: uuidv4(), label: 'Else' },
       ],
     };
+    const updatedPositions = { ...nodePositions, [id]: position };
     set({
-      project: { ...project, conditions: [...project.conditions, condition] },
-      nodePositions: { ...nodePositions, [id]: position },
+      project: { ...project, conditions: [...project.conditions, condition], nodePositions: updatedPositions },
+      nodePositions: updatedPositions,
     });
     return id;
   },
@@ -568,9 +576,10 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
     if (!project) return '';
     const id = uuidv4();
     const softStart: SoftStart = { id, name: 'Start', buttonLabel: 'Get Started' };
+    const updatedPositions = { ...nodePositions, [id]: position };
     set({
-      project: { ...project, softStarts: [...project.softStarts, softStart] },
-      nodePositions: { ...nodePositions, [id]: position },
+      project: { ...project, softStarts: [...project.softStarts, softStart], nodePositions: updatedPositions },
+      nodePositions: updatedPositions,
     });
     return id;
   },
@@ -592,9 +601,10 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
     if (!project) return '';
     const id = uuidv4();
     const note: StickyNote = { id, content: 'New note...', position };
+    const updatedPositions = { ...nodePositions, [id]: position };
     set({
-      project: { ...project, notes: [...project.notes, note] },
-      nodePositions: { ...nodePositions, [id]: position },
+      project: { ...project, notes: [...project.notes, note], nodePositions: updatedPositions },
+      nodePositions: updatedPositions,
     });
     return id;
   },
@@ -703,13 +713,13 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
 
   // === Versions ===
   createVersion: (name: string) => {
-    const { project } = get();
+    const { project, nodePositions } = get();
     if (!project) return;
     const version = {
       id: uuidv4(),
       name,
       date: new Date().toISOString(),
-      snapshot: JSON.stringify({ ...project, versions: [] }),
+      snapshot: JSON.stringify({ ...project, nodePositions, versions: [] }),
     };
     set({ project: { ...project, versions: [...project.versions, version] } });
   },
@@ -722,6 +732,7 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
     const restored = JSON.parse(version.snapshot) as Project;
     set({
       project: { ...restored, id: project.id, versions: project.versions },
+      nodePositions: restored.nodePositions || {},
     });
   },
 
@@ -739,8 +750,11 @@ export const useDesignerStore = create<DesignerStore>((set, get) => ({
   // === Node Positions ===
   nodePositions: {},
   updateNodePosition: (id: string, position: { x: number; y: number }) => {
-    set((state) => ({
-      nodePositions: { ...state.nodePositions, [id]: position },
-    }));
+    const { project } = get();
+    const updatedPositions = { ...get().nodePositions, [id]: position };
+    set({
+      nodePositions: updatedPositions,
+      ...(project ? { project: { ...project, nodePositions: updatedPositions } } : {}),
+    });
   },
 }));

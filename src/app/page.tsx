@@ -69,7 +69,7 @@ export default function Home() {
     const id = createProject(newProjectName.trim());
     setNewProjectName('');
     setCreateDialogOpen(false);
-    router.push(`/project/${id}`);
+    router.push(`/project?id=${id}`);
   }, [newProjectName, createProject, router]);
 
   const handleRename = useCallback(() => {
@@ -155,7 +155,7 @@ export default function Home() {
                         key={project.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, project.id)}
-                        onClick={() => router.push(`/project/${project.id}`)}
+                        onClick={() => router.push(`/project?id=${project.id}`)}
                         className="group rounded-md border bg-card p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between">
@@ -177,7 +177,7 @@ export default function Home() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => router.push(`/project/${project.id}`)}
+                                onClick={() => router.push(`/project?id=${project.id}`)}
                               >
                                 <FolderOpen className="h-4 w-4 mr-2" />
                                 Open
