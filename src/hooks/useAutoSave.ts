@@ -9,6 +9,7 @@ const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 export function useAutoSave() {
   const project = useDesignerStore((s) => s.project);
   const saveProject = useDesignerStore((s) => s.saveProject);
+  const nodePositions = useDesignerStore((s) => s.nodePositions);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced save on project changes
@@ -27,7 +28,7 @@ export function useAutoSave() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [project, saveProject]);
+  }, [project, nodePositions, saveProject]);
 
   // Interval-based save every 5 minutes
   useEffect(() => {
@@ -38,12 +39,24 @@ export function useAutoSave() {
     return () => clearInterval(interval);
   }, [saveProject]);
 
-  // Save on beforeunload
+  // Save on beforeunload using keepalive fetch for reliability
   useEffect(() => {
     const handleBeforeUnload = () => {
-      saveProject();
+      const state = useDesignerStore.getState();
+      if (!state.project) return;
+      const updated = { ...state.project, nodePositions: state.nodePositions, updatedAt: new Date().toISOString() };
+      try {
+        fetch(`/api/projects/${state.project.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+          keepalive: true,
+        });
+      } catch {
+        // Best-effort save on unload
+      }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveProject]);
+  }, []);
 }

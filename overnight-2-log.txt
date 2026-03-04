@@ -1,0 +1,83 @@
+=== SEFBOT OVERNIGHT BUILD 2: Chatbot Editor + Settings + Notifications ===
+Started at: Sun Mar  1 10:58:57 PM UTC 2026
+===========================================================================
+
+>>> PHASE A: All Data Models & APIs
+
+All done. Here's a summary of everything created:
+
+### 1. Prisma Schema (`prisma/schema.prisma`)
+- **Organization** — id, name, chatbots relation
+- **Chatbot** — id, name, organizationId, active, deletedAt (soft-delete), settings (JSON), steps/versions/notifications relations, projectId
+- **ChatbotStep** — id, chatbotId, projectId, sourceBlockId, number, name, type, color, output/input/jump/settings (all JSON), sortOrder
+- **ChatbotVersion** — id, chatbotId, snapshot (JSON), changes, createdBy
+- **Notification** — id, chatbotId, name, type, active, config (JSON), conditions (JSON)
+- Project default status changed from `PROGRESS` to `DRAFT`
+- All JSON fields use `String` type for SQLite compatibility
+
+### 2. Project Status Update
+- **6 kanban stages**: DRAFT → DESIGN_REVIEW → APPROVED → DEVELOPMENT → TESTING → LIVE
+- `ProjectStatus` type added to `src/types/index.ts`
+- Kanban board updated to 6-column grid layout
+- Store, API routes, and import parsers updated for new statuses
+
+### 3. TypeScript Types (`src/types/chatbot.ts`)
+- `StepType` enum (button, carousel, email, phone, location, answer, logic, calendar, stars, file)
+- All input types: ButtonInput, CarouselInput, EmailInput, PhoneInput, LocationInput, AnswerInput, LogicInput, CalendarInput, StarsInput, FileInput
+- OutputBlock, JumpRule with conditions
+- ChatbotData, ChatbotStepData, ChatbotVersionData, NotificationData
+
+### 4. API Routes (all 30+ endpoints)
+
+| Area | Routes |
+|------|--------|
+| **Organizations** | GET/POST `/api/organizations`, DELETE `/api/organizations/[id]` |
+| **Chatbots CRUD** | GET/POST `/api/chatbots`, GET/PUT/DELETE `/api/chatbots/[id]` |
+| **Chatbot Actions** | POST duplicate, activate, deactivate, restore; GET trash |
+| **Steps** | GET/POST `/api/chatbots/[id]/steps`, GET/PUT/DELETE `[stepId]`, POST duplicate, PATCH reorder, PATCH bulk-color |
+| **Settings** | GET/PUT settings, POST languages, DELETE languages/[lang], GET embed-code |
+| **Versions** | GET/POST versions, POST preview-link, GET `/api/preview/[token]` (public) |
+| **Notifications** | GET/POST notifications, GET/PUT/DELETE `[notifId]`, POST duplicate, PATCH toggle |
+| **Import** | POST import-from-project |
+
+Build passes cleanly with all routes registered.
+Phase A complete at: Sun Mar  1 11:07:54 PM UTC 2026
+
+>>> PHASE B: Chatbot Editor UI (all pages + components)
+
+Build passes. Here's a summary of everything built:
+
+## Complete Chatbot Editor UI - Build Summary
+
+### New Files Created (14 files)
+
+**API Layer:**
+- `src/lib/chatbot-api.ts` - Full API client with 25+ functions covering organizations, chatbots, steps, settings, notifications, versions, and preview
+
+**Types Extended:**
+- `src/types/chatbot.ts` - Added `WorkHours`, `DesignColors`, `SmartStartDefault`, `SmartStartCondition`, `ConversionItem`, `DefaultResponse`, `CustomVariable`, `Organization`, and extended `ChatbotSettings` with all section fields
+
+**Pages:**
+1. `src/app/chatbots/page.tsx` - Organization & chatbot list with create/rename/delete orgs, chatbot CRUD, trash with 30-day recovery and days remaining, import from designer project, move between orgs
+2. `src/app/chatbots/[id]/layout.tsx` - Shared layout with tab navigation (Edit | Settings | Notifications | Analytics | Preview)
+3. `src/app/chatbots/[id]/edit/page.tsx` - Main editor with left step list, center 4-tab detail (Output/Input/Jump/Settings), save with validation & auto-versioning
+4. `src/app/chatbots/[id]/settings/page.tsx` - Bot settings with 6 tabs: Main (name, languages, embed code, work hours), Design (7 colors, position, close button, background), Smart Start (default + conditional), Conversions, Default Responses (multi-language), Variables
+5. `src/app/chatbots/[id]/notifications/page.tsx` - Email & webhook notifications with name, config, conditions (AND/OR), toggle, duplicate, delete
+6. `src/app/chatbots/[id]/preview/page.tsx` - Simulated chat widget walking through steps, rendering output blocks as messages, handling all input types (buttons, text, carousel, stars, etc.), reset & shareable preview link
+7. `src/app/chatbots/[id]/analytics/page.tsx` - Placeholder page
+
+**Components:**
+8. `src/components/chatbot/StepList.tsx` - Left panel with numbered steps, color dots, checkboxes, drag reorder, bulk ops bar (color, duplicate, delete)
+9. `src/components/chatbot/OutputEditor.tsx` - 6 block types (text/html/info/warning/image/video), drag reorder, duplicate, delete, inline formatting toolbar (bold/italic/emoji/links/variables)
+10. `src/components/chatbot/InputEditor.tsx` - All 10 input types: button (text/icon/highlight/list/grid/yes-no), carousel (image/title/desc/button per card), email, phone (prefix/country flag), location (google/mapy.cz), answer (placeholder/enter-send/optional/numbers-only with units/decimals/thousands), logic, calendar (allow-past/future-limit/start-monday), stars (icon picker/count/confirm text), file (camera toggle)
+11. `src/components/chatbot/JumpEditor.tsx` - Jump rules with trigger, target (step/exit/URL), URL target options (same_tab/new_tab/new_window), AND/OR conditions
+12. `src/components/chatbot/SettingsEditor.tsx` - Step name, type selector, color picker, type-specific settings (timeout, validation, save variable)
+
+**Navigation Updated:**
+- `src/components/shared/AppHeader.tsx` - Added Chatbots nav item between Projects and Import
+Phase B complete at: Sun Mar  1 11:26:13 PM UTC 2026
+
+=== OVERNIGHT BUILD 2 COMPLETE ===
+Finished at: Sun Mar  1 11:26:13 PM UTC 2026
+===================================
+Next: Run overnight-3.sh for Analytics, Runtime, Sharing, and Transformation

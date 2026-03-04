@@ -25,6 +25,7 @@ function CustomEdgeComponent({
   const edgeData = data as Record<string, unknown> | undefined;
   const label = (edgeData?.label as string) || '';
   const color = (edgeData?.color as string) || '#4A90D9';
+  const opacity = (edgeData?.opacity as number) ?? 1;
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -52,6 +53,7 @@ function CustomEdgeComponent({
         fill="none"
         stroke={color}
         strokeWidth={2}
+        strokeOpacity={opacity}
         style={style}
         className="react-flow__edge-path"
         onMouseEnter={() => setHovered(true)}

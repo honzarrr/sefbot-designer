@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 import { useDesignerStore } from '@/stores/designerStore';
-import { ProjectListItem } from '@/types';
+import { ProjectStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,17 +31,24 @@ import {
   Trash2,
   Pencil,
   FolderOpen,
+  FolderPlus,
+  Lock,
 } from 'lucide-react';
 import { BuildInfo } from '@/components/shared/BuildInfo';
+import { AppHeader } from '@/components/shared/AppHeader';
 
-const COLUMNS: { key: ProjectListItem['status']; label: string; color: string }[] = [
-  { key: 'progress', label: 'In Progress', color: 'bg-blue-500' },
-  { key: 'approval', label: 'Approval', color: 'bg-amber-500' },
-  { key: 'done', label: 'Done', color: 'bg-green-500' },
+const COLUMNS: { key: ProjectStatus; label: string; color: string }[] = [
+  { key: 'draft', label: 'Draft', color: 'bg-slate-500' },
+  { key: 'design_review', label: 'Design Review', color: 'bg-amber-500' },
+  { key: 'approved', label: 'Approved', color: 'bg-blue-500' },
+  { key: 'development', label: 'Development', color: 'bg-purple-500' },
+  { key: 'testing', label: 'Testing', color: 'bg-orange-500' },
+  { key: 'live', label: 'Live', color: 'bg-green-500' },
 ];
 
 export default function Home() {
   const router = useRouter();
+  const { data: session } = useSession();
   const {
     projects,
     loadProjects,
@@ -56,21 +65,27 @@ export default function Home() {
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null);
   const [dragItem, setDragItem] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   useEffect(() => {
-    loadProjects();
+    loadProjects().finally(() => setLoading(false));
   }, [loadProjects]);
 
   const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(searchFilter.toLowerCase())
   );
 
-  const handleCreate = useCallback(() => {
+  const handleCreate = useCallback(async () => {
     if (!newProjectName.trim()) return;
-    const id = createProject(newProjectName.trim());
+    const id = await createProject(newProjectName.trim());
     setNewProjectName('');
     setCreateDialogOpen(false);
-    router.push(`/project?id=${id}`);
+    if (id) {
+      router.push(`/project?id=${id}`);
+    }
+    toast.success('Project created.');
   }, [newProjectName, createProject, router]);
 
   const handleRename = useCallback(() => {
@@ -78,6 +93,7 @@ export default function Home() {
     renameProject(renameTarget.id, renameTarget.name.trim());
     setRenameTarget(null);
     setRenameDialogOpen(false);
+    toast.success('Project renamed.');
   }, [renameTarget, renameProject]);
 
   const handleDragStart = (e: React.DragEvent, projectId: string) => {
@@ -90,7 +106,7 @@ export default function Home() {
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, status: ProjectListItem['status']) => {
+  const handleDrop = (e: React.DragEvent, status: ProjectStatus) => {
     e.preventDefault();
     if (dragItem) {
       updateProjectStatus(dragItem, status);
@@ -105,31 +121,45 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Sefbot Designer</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search projects..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="pl-9 w-64"
-              />
-            </div>
+      <AppHeader />
+
+      {/* Toolbar */}
+      <div className="border-b px-6 py-3 flex items-center gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search projects..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="pl-9 w-64"
+          />
+        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Project
+        </Button>
+      </div>
+
+      {/* Kanban Board */}
+      <div className="p-6">
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3" />
+            <p className="text-sm text-muted-foreground">Loading projects...</p>
+          </div>
+        )}
+        {!loading && projects.length === 0 && (
+          <div className="text-center py-20">
+            <FolderPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Create your first project</h2>
+            <p className="text-sm text-muted-foreground mb-4">Design chatbot conversation flows visually on a canvas.</p>
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
           </div>
-        </div>
-      </header>
-
-      {/* Kanban Board */}
-      <div className="p-6">
-        <div className="grid grid-cols-3 gap-6">
+        )}
+        <div className="grid grid-cols-6 gap-4">
           {COLUMNS.map((col) => {
             const colProjects = filteredProjects.filter((p) => p.status === col.key);
             return (
@@ -193,18 +223,26 @@ export default function Home() {
                                 Rename
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => duplicateProject(project.id)}
+                                onClick={() => {
+                                  duplicateProject(project.id);
+                                  toast.success('Project duplicated.');
+                                }}
                               >
                                 <Copy className="h-4 w-4 mr-2" />
                                 Duplicate
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => deleteProject(project.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
+                              {isAdmin && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    deleteProject(project.id);
+                                    toast.success('Project deleted.');
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -213,6 +251,24 @@ export default function Home() {
                           <span>&middot;</span>
                           <span>Updated {formatDate(project.updatedAt)}</span>
                         </div>
+                        {project.lockedBy && (
+                          <div className="flex items-center gap-1 mt-1.5 text-xs text-amber-600">
+                            <Lock className="h-3 w-3" />
+                            <span>Editing: {project.lockedBy.name}</span>
+                            {isAdmin && project.lockedBy.userId !== session?.user?.id && (
+                              <button
+                                className="ml-auto text-xs underline hover:text-amber-700"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await fetch(`/api/projects/${project.id}/lock`, { method: 'DELETE' });
+                                  loadProjects();
+                                }}
+                              >
+                                Force unlock
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                     {colProjects.length === 0 && (

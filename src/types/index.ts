@@ -74,21 +74,103 @@ export interface Connection {
   targetId: string;
   label?: string; // auto-filled from button label if from button
   color?: string; // defaults to source step color
+  layer?: 'design' | 'development'; // "design" (default) or "development"
+  jumpRule?: JumpRule | null; // navigation rule for development connections
+  isHidden?: boolean; // hide from canvas unless "show hidden" is on
 }
+
+// === JUMP RULES (for development connections) ===
+export type JumpRuleType = 'direct' | 'conditional' | 'button';
+
+export interface JumpRule {
+  type: JumpRuleType;
+  targetStepId: string;
+  condition?: {
+    variable: string;
+    operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'not_equals';
+    value: string;
+  };
+  buttonLabel?: string; // for button-type jumps
+}
+
+// === CANVAS MODE ===
+export type CanvasMode = 'client' | 'design' | 'development';
+
+// === TRANSFORM TYPES ===
+export interface TransformedStep {
+  id: string;
+  sourceBlockId: string;
+  sourceStepId: string;
+  number: number;
+  name: string;
+  type: 'message' | 'button' | 'answer' | 'logic';
+  color: string;
+  output: TransformOutput;
+  input: TransformInput;
+  jump: TransformJump[];
+  settings: TransformStepSettings;
+}
+
+export interface TransformOutput {
+  text?: string;
+  imageUrl?: string;
+  typingDelay?: number;
+}
+
+export interface TransformInput {
+  type?: 'none' | 'text' | 'email' | 'phone' | 'button';
+  placeholder?: string;
+  options?: { label: string; value: string }[];
+  validation?: { required?: boolean; pattern?: string };
+}
+
+export interface TransformJump {
+  targetStepId: string;
+  condition?: JumpRule['condition'];
+  buttonLabel?: string;
+  isDefault?: boolean;
+}
+
+export interface TransformStepSettings {
+  skipLogic?: string;
+  delayMs?: number;
+  typingIndicator?: boolean;
+}
+
+export interface TransformWarning {
+  blockId: string;
+  stepId?: string;
+  type: 'dead_end' | 'orphan' | 'missing_connection' | 'loop_detected';
+  message: string;
+}
+
+export interface TransformResult {
+  steps: TransformedStep[];
+  connections: Connection[];
+  warnings: TransformWarning[];
+}
+
+// === PROJECT STATUS ===
+export type ProjectStatus = 'draft' | 'design_review' | 'approved' | 'development' | 'testing' | 'live';
 
 // === PROJECT ===
 export interface ProjectListItem {
   id: string;
   name: string;
-  status: 'progress' | 'approval' | 'done';
+  status: ProjectStatus;
   createdAt: string;
   updatedAt: string;
+  lockedBy?: {
+    userId: string;
+    name: string;
+    lockedAt: string;
+  } | null;
 }
 
 export interface Project {
   id: string;
   name: string;
-  status: 'progress' | 'approval' | 'done';
+  status: ProjectStatus;
   steps: Step[];
   conditions: ConditionNode[];
   softStarts: SoftStart[];

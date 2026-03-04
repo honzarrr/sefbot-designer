@@ -1,0 +1,307 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  firstName     String
+  lastName      String
+  passwordHash  String?
+  role          String    @default("EDITOR")
+  inviteToken   String?   @unique
+  inviteExpires DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  projects      ProjectMember[]
+  versions      ProjectVersion[]
+  activeLock    ProjectLock?
+  assignedTodos ProjectTodo[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  status      String   @default("DRAFT")
+  data        String   // JSON stored as text (SQLite doesn't have native JSON)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     ProjectMember[]
+  versions    ProjectVersion[]
+  lock        ProjectLock?
+  imports     Import[]
+  shares      ProjectShare[]
+  comments    BlockComment[]
+  todos       ProjectTodo[]
+  devConnections DevConnection[]
+}
+
+model ProjectMember {
+  id        String  @id @default(cuid())
+  userId    String
+  projectId String
+  user      User    @relation(fields: [userId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+}
+
+model ProjectVersion {
+  id        String   @id @default(cuid())
+  name      String
+  snapshot  String   // JSON stored as text
+  projectId String
+  createdBy String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator   User     @relation(fields: [createdBy], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([createdBy])
+}
+
+model ProjectLock {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  userId    String   @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  lockedAt  DateTime @default(now())
+}
+
+model Import {
+  id        String   @id @default(cuid())
+  projectId String
+  source    String   // VOICEFLOW_VF, VOICEFLOW_CSV, VOICEFLOW_PDF
+  fileName  String
+  status    String   @default("PENDING")
+  log       String?
+  project   Project  @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// === Development Connection Model ===
+
+model DevConnection {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceId       String
+  sourceHandleId String?
+  targetId       String
+  label          String?
+  color          String?
+  layer          String   @default("design")    // "design" or "development"
+  jumpRule       String?                         // JSON string for JumpRule
+  isHidden       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+// === Chatbot Editor Models ===
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  chatbots  Chatbot[]
+  createdAt DateTime  @default(now())
+}
+
+model Chatbot {
+  id             String           @id @default(cuid())
+  name           String
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  active         Boolean          @default(true)
+  deletedAt      DateTime?
+  settings       String?          // JSON stored as text (SQLite)
+  steps          ChatbotStep[]
+  versions       ChatbotVersion[]
+  notifications  Notification[]
+  conversations  Conversation[]
+  conversions    ConversionEvent[]
+  analyticsReports AnalyticsReport[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  projectId      String?
+
+  @@index([organizationId])
+}
+
+model ChatbotStep {
+  id            String   @id @default(cuid())
+  chatbotId     String?
+  chatbot       Chatbot? @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  projectId     String?
+  sourceBlockId String?
+  number        Int
+  name          String
+  type          String
+  color         String   @default("#607D8B")
+  output        String   // JSON stored as text (SQLite)
+  input         String   // JSON stored as text (SQLite)
+  jump          String   // JSON stored as text (SQLite)
+  settings      String   // JSON stored as text (SQLite)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([chatbotId])
+  @@index([projectId])
+}
+
+model ChatbotVersion {
+  id        String   @id @default(cuid())
+  chatbotId String
+  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  snapshot  String   // JSON stored as text (SQLite)
+  changes   String?
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@index([chatbotId])
+}
+
+// === Analytics Models ===
+
+model Conversation {
+  id          String   @id @default(cuid())
+  chatbotId   String
+  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  sessionId   String   @unique
+  deviceType  String?
+  pageUrl     String?
+  isWeekend   Boolean  @default(false)
+  isWorkHours Boolean  @default(false)
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  isPreview   Boolean  @default(false)
+  interactions ConversationInteraction[]
+
+  @@index([chatbotId])
+}
+
+model ConversationInteraction {
+  id              String       @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  stepId          String?
+  stepName        String?
+  type            String
+  content         String?      // JSON stored as text (SQLite)
+  createdAt       DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+model ConversionEvent {
+  id              String   @id @default(cuid())
+  conversationId  String
+  chatbotId       String
+  chatbot         Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  conversionName  String
+  conversionType  String
+  metadata        String?  // JSON stored as text (SQLite)
+  createdAt       DateTime @default(now())
+
+  @@index([chatbotId])
+  @@index([conversationId])
+}
+
+model AnalyticsReport {
+  id        String   @id @default(cuid())
+  chatbotId String
+  chatbot   Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  @@index([chatbotId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  chatbotId   String
+  chatbot     Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  active      Boolean  @default(true)
+  config      String   // JSON stored as text (SQLite)
+  conditions  String?  // JSON stored as text (SQLite)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([chatbotId])
+}
+
+// === Sharing & Comments Models ===
+
+model ProjectShare {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shareToken  String    @unique
+  password    String
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdBy   String
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+model BlockComment {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  blockId     String
+  parentId    String?
+  parent      BlockComment? @relation("CommentThread", fields: [parentId], references: [id], onDelete: SetNull)
+  replies     BlockComment[] @relation("CommentThread")
+  authorName  String
+  authorEmail String?
+  authorType  String   @default("client")
+  content     String
+  isResolved  Boolean  @default(false)
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  todo        ProjectTodo?
+
+  @@index([projectId])
+  @@index([parentId])
+  @@index([blockId])
+}
+
+model ProjectTodo {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  commentId   String?   @unique
+  comment     BlockComment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  blockId     String?
+  title       String
+  description String?
+  status      String    @default("open")
+  assigneeId  String?
+  assignee    User?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  priority    String    @default("normal")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+}

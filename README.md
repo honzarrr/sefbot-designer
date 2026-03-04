@@ -1,4 +1,3 @@
-# Sefbot Designer
 
 A visual canvas-based chatbot conversation flow designer built with Next.js, React Flow, and Zustand. Design chatbot flows by placing, editing, and connecting blocks on an infinite canvas -- similar to tools like Voiceflow.
 

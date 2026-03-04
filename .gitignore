@@ -26,7 +26,27 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+
+# firebase
+.firebase/
+
+# build logs and agent scripts
+agent-build.log
+agent-logs/
+build-log.txt
+*.log.txt
+build-day*.sh
+build-overnight.sh
+overnight-*.sh
+sefbot-*.sh
+qa-deploy-log.txt
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+src/generated/
 
 # vercel
 .vercel
